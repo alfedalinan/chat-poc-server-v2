@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { Server } from '../config/App';
-import { getUserExceptField, createNewUer, getUserByField, updateUser } from '../factories/UserFactory';
-import { IUser } from "../interfaces/IUser";
+import { IUserRepository } from "../interfaces/IUserRepository";
 import { User } from "../entities/User";
 import { UserRepository } from "../repositories/UserRepository";
 
-let userRepository: IUser;
+let userRepository: IUserRepository;
 
 class UserController {
 
@@ -18,7 +17,6 @@ class UserController {
 
         let username: string = request.query.value.toString();
 
-        // getUserExceptField(request.query.field.toString(), request.query.value)
         userRepository.searchUsers(username)
             .then((result) => {
                 response.json({
@@ -42,7 +40,6 @@ class UserController {
 
     public getByField(request: Request, response: Response): any {
         
-        // getUserByField("id", request.params.id)
         userRepository.getUserById(parseInt(request.params.id))
             .then(result => {
 

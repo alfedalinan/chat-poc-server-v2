@@ -6,9 +6,6 @@ import { MessageController } from '../controllers/MessageController';
 import { VerifyAccessToken, VerifyRefreshToken } from "../middlewares/Tokens";
 import { refreshToken } from "../utilities/TokenHelper";
 
-import { IUser } from "../interfaces/IUser";
-import { UserRepository } from "../repositories/UserRepository";
-
 class Routes {
 
     loginController: LoginController;

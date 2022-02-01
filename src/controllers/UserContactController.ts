@@ -1,25 +1,42 @@
-import { Request, Response } from 'express';
-import { error } from 'node:console';
-import { Server } from '../config/App';
-import { getAllContacts, createNewContact, getSingleContactDetail, updateContactDetails, removeContact } from '../factories/UserContactFactory';
-import { getUserByField } from "../factories/UserFactory";
+import { Request, Response } from "express";
+import { Server } from "../config/App";
+import { IUserContactRepository } from "../interfaces/IUserContactRepository";
+import { UserContactRepository } from "../repositories/UserContactRepository";
+import { IUserRepository } from "../interfaces/IUserRepository";
+import { UserRepository } from "../repositories/UserRepository";
+import { UserContact } from "../entities/UserContact";
+import { mapKeys, rearg, snakeCase } from "lodash";
 
+let userContactRepository: IUserContactRepository;
+let userRepository: IUserRepository;
 
 class UserContactController {
 
-    constructor() { }
+    constructor() { 
+        userContactRepository = new UserContactRepository();
+        userRepository = new UserRepository();
+    }
 
     public getMyContacts(request: Request, response: Response): any {
 
-        getAllContacts( parseInt(request.params.id) )
-            .then((result) => {
+        let id: number = parseInt(request.params.id);
+
+        // getAllContacts( parseInt(request.params.id) )
+        userContactRepository.getContacts(id)
+             .then((result) => {
 
                 if (result.length > 0) {
+
+                    let data: any = [];
+                    result.forEach(item => {
+                        let snakeCaseConverted: any = mapKeys(item, rearg(snakeCase, 1));
+                        data.push(snakeCaseConverted);
+                    })
 
                     response.json({
                         status: Server.status.OK.CODE,
                         message: Server.status.OK.MSG,
-                        data: result
+                        data: data
                     })
                 }
                 else {
@@ -45,15 +62,19 @@ class UserContactController {
 
     public getSingleDetail(request: Request, response: Response): any {
 
-        getSingleContactDetail( parseInt(request.params.contact_id), parseInt(request.params.id) )
+        let contactId: number = parseInt(request.params.contact_id);
+        let ownerId: number = parseInt(request.params.id);
+
+        // getSingleContactDetail( parseInt(request.params.contact_id), parseInt(request.params.id) )
+        userContactRepository.getSingleContact(contactId, ownerId)
             .then(result => {
 
-                if (result.length > 0) {
+                if (result != null) {
 
                     response.json({
                         status: Server.status.OK.CODE,
                         message: Server.status.OK.MSG,
-                        data: result[0]
+                        data: result
                     });
 
                 }
@@ -80,24 +101,26 @@ class UserContactController {
 
     public async create(request: Request, response: Response): Promise<any> {
 
-        let contactEmail = "";
-        let contactRegId = "";
-        let contactUsername = "";
+        let contactEmail: string = "";
+        let contactRegId: string = "";
+        let contactUsername: string = "";
 
-        await getUserByField('id', request.body.contact_id)
+        let contactId: number = parseInt(request.body.contact_id);
+
+        await userRepository.getUserById(contactId)
             .then(result => {
 
-                if (result.length > 0) {
-                    contactEmail = result[0].email;
-                    contactRegId = result[0].register_id;
-                    contactUsername = result[0].username;
+                if (result != null) {
+                    contactEmail = result.email;
+                    contactUsername = result.username;
                 }
 
-            })
+            });
         
         let body = {};    
+        let userContact: UserContact = request.body;
 
-        createNewContact(request.body)
+        userContactRepository.createContact(userContact)
             .then((result) => {
 
                 body = request.body;
@@ -129,7 +152,11 @@ class UserContactController {
 
     public update(request: Request, response: Response): any {
 
-        updateContactDetails(request.body, parseInt(request.params.id))
+        let id: number = parseInt(request.params.id);
+        let userContact: UserContact = request.body;
+
+        // updateContactDetails(request.body, parseInt(request.params.id))
+        userContactRepository.updateContact(id, userContact)
             .then(result => {
 
                 response.json({
@@ -155,8 +182,11 @@ class UserContactController {
     }
 
     public remove(request: Request, response: Response): any {
+        
+        let id: number = parseInt(request.params.id);
 
-        removeContact( parseInt(request.params.id) )
+        // removeContact( parseInt(request.params.id) )
+        userContactRepository.removeContact(id)
             .then(result => {
 
                 response.json({

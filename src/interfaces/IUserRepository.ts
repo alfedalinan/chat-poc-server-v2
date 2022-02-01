@@ -1,7 +1,7 @@
 import { User } from "../entities/User";
 import { UserSearchResult } from "../data-sets/UserSearchResult";
 
-interface IUser {
+interface IUserRepository {
     
     getUsers(): Promise<User[]>;
     getUserById(id: number): Promise<User>;
@@ -11,4 +11,4 @@ interface IUser {
 
 }
 
-export { IUser }
+export { IUserRepository }

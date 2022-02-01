@@ -1,14 +1,18 @@
 import { User } from "entities/User";
-import { IUser } from "../interfaces/IUser";
+import { IUserRepository } from "../interfaces/IUserRepository";
 import { UserSearchResult } from "../data-sets/UserSearchResult";
 import { mysqlParameterizedPromise, mysqlToPromise } from "../utilities/DbHelper";
 import { mapKeys, rearg, snakeCase  } from "lodash";
 
-class UserRepository implements IUser {
+class UserRepository implements IUserRepository {
     
     async getUsers(): Promise<User[]> {
         
-        let queryResult: any = await mysqlToPromise('SELECT id, username, created_at, update_at FROM users');
+        let queryResult: any = await mysqlToPromise(`SELECT id, 
+                                                            username, 
+                                                            created_at, 
+                                                            update_at 
+                                                       FROM users`);
         let users: User[] = [];
         
         for (let index = 0; index < queryResult.length; index++) {
@@ -27,7 +31,17 @@ class UserRepository implements IUser {
 
     async getUserById(id: number): Promise<User> {
         
-        let queryResult: any = await mysqlToPromise(`SELECT id, username, first_name, last_name, access_token, email, created_at, update_at FROM users WHERE id = ${id} LIMIT 1`);
+        let queryResult: any = await mysqlToPromise(`SELECT id, 
+                                                            username, 
+                                                            first_name, 
+                                                            last_name, 
+                                                            access_token, 
+                                                            email, 
+                                                            created_at, 
+                                                            update_at 
+                                                       FROM users 
+                                                      WHERE id = ${id} 
+                                                      LIMIT 1`);
 
         let user: User = {
             id: queryResult[0].id,
@@ -47,7 +61,16 @@ class UserRepository implements IUser {
     async searchUsers(username: string): Promise<UserSearchResult[]> {
         
         // username params is the user currently logged in
-        let queryResult: any = await mysqlToPromise(`SELECT users.id, user_registers.register_id AS register_id, username, users.created_at, users.update_at FROM users LEFT JOIN user_registers ON users.id = user_registers.user_id WHERE username != '${username}'`);
+        let queryResult: any = await mysqlToPromise(`SELECT users.id, 
+                                                            user_registers.register_id AS register_id, 
+                                                            username, 
+                                                            users.created_at, 
+                                                            users.update_at 
+                                                       FROM users 
+                                                       LEFT 
+                                                       JOIN user_registers 
+                                                         ON users.id = user_registers.user_id 
+                                                      WHERE username != '${username}'`);
 
         let userSearchResults: UserSearchResult[] = [];
 

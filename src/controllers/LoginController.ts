@@ -1,37 +1,41 @@
 import { Request, Response } from 'express';
-import { findUser, removeRegister } from '../factories/LoginFactory';
 import { Server } from '../config/App';
 import { decryptText } from "../utilities/BaseHelper";
 import { createToken } from "../utilities/TokenHelper";
-import { create } from 'ts-node';
+import { ILoginRepository } from "../interfaces/ILoginRepository";
+import { LoginRepository } from "../repositories/LoginRepository";
+
+let loginRepository: ILoginRepository;
 
 class LoginController {
 
-    constructor() { }
+    constructor() { 
+        loginRepository = new LoginRepository();
+    }
 
     public exec(request: Request, response: Response): any {
         
-        findUser({ username: request.body.username })
+        loginRepository.login(request.body.username)
             .then((result) => {
                 
-                if (result.length > 0) {
+                if (result != null) {
                     
                     // check if password is correct here
                     let requestPassword = decryptText(request.body.password);
-                    let resultPassword = decryptText(result[0].password);
+                    let resultPassword = decryptText(result.password);
                     if (requestPassword == resultPassword) {
                         
                         let payload: Object = { 
-                            username: result[0].username, 
-                            id: result[0].id, 
-                            register_id: result[0].register_id, 
-                            first_name: result[0].first_name, 
-                            last_name: result[0].last_name, 
-                            email: result[0].email 
+                            username: result.username, 
+                            id: result.id, 
+                            register_id: result.registerId, 
+                            first_name: result.firstName, 
+                            last_name: result.lastName, 
+                            email: result.email 
                         };
                         
                         let tokenPayload = {
-                            id: result[0].id,
+                            id: result.id,
                             marked: Math.ceil(Date.now() / 1000)
                         };
                         // create two tokens (access and refresh)
@@ -44,7 +48,7 @@ class LoginController {
                         response.json({
                             status: Server.status.OK.CODE,
                             message: Server.status.OK.MSG,
-                            data: (result.length > 0) ? payload : {}
+                            data: (result != null) ? payload : {}
                         });
 
                     }
@@ -89,10 +93,10 @@ class LoginController {
     public purge(request: Request, response: Response): any {
         
         if (request.body.register_id == null || request.body.register_id == '') {
-            removeRegister(false);
+            loginRepository.removeRegisters(false);
         }
         else {
-            removeRegister(true, request.body.register_id);
+            loginRepository.removeRegisters(true, request.body.register_id);
         }
 
     }
