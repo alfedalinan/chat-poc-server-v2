@@ -1,10 +1,16 @@
 import app from './app';
 import { Server, Project, Database } from './config/App';
 import { createConnection } from 'mysql';
-import { checkRegister, registerUser, unregisterUser, updateUserRegister } from './factories/UserFactory';
 import { getUnreadConversation, setMessageStatusByUuid, createMessage, getMessageStatusByIds, setMessageStatus, setReadStatus } from './factories/MessageFactory';
 import { getCurrentTS } from "./utilities/BaseHelper";
-import { createConversation } from './factories/ConversationFactory';
+
+import { IConversationRepository } from "./interfaces/IConversationRepository";
+import { ConversationRepository } from "./repositories/ConversationRepository";
+import { IUserRepository } from "./interfaces/IUserRepository";
+import { UserRepository } from "./repositories/UserRepository";
+
+let conversationRepository: IConversationRepository = new ConversationRepository();
+let userRepository: IUserRepository = new UserRepository();
 
 const SocketIO = require('socket.io');
 
@@ -31,7 +37,8 @@ io.on('connection', (socket) => {
     socket.on('user.register:send', async (data) => {
 
         let registeredUser = [];
-        await checkRegister({ user_id: data.userId })
+        // await checkRegister({ user_id: data.userId })
+        userRepository.checkRegister(data.userId)
             .then((result) => {
                 registeredUser = result;
             })
@@ -39,10 +46,12 @@ io.on('connection', (socket) => {
         
         if (registeredUser.length < 1) {
             // user is from offline status
-            registerUser({ user_id: data.userId, register_id: data.register_id })
+            // registerUser({ user_id: data.userId, register_id: data.register_id })
+            userRepository.registerUser({ userId: data.userId, registerId: data.registerId });
         }
         else {
-            updateUserRegister([data.register_id, parseInt(data.userId)])
+            // updateUserRegister([data.register_id, parseInt(data.userId)])
+            userRepository.updateUserRegister(data.register_id, parseInt(data.userId));
         }
 
         
@@ -101,7 +110,8 @@ io.on('connection', (socket) => {
     socket.on('user.unregister:send', (data) => {
 
         // remove record of register
-        unregisterUser({ user_id: data.userId })
+        // unregisterUser({ user_id: data.userId })
+        userRepository.removeUserRegister(parseInt(data.userId))
             .then((result) => {
                 delete sessions[data.register_id];
                 io.emit('user.unregister:ack', data);
@@ -281,7 +291,8 @@ io.on('connection', (socket) => {
         memberIds.push(data.receiver_user_id);
 
         // 1. Create the conversation and members
-        await createConversation({ name: data.name, members: memberIds })
+        // await createConversation({ name: data.name, members: memberIds })
+        conversationRepository.createConversation({ name: data.name, members: memberIds })
             .then((result) => {
                 conversationId = result.conversation_id;
             })

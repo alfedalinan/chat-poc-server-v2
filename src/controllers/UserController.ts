@@ -3,6 +3,7 @@ import { Server } from '../config/App';
 import { IUserRepository } from "../interfaces/IUserRepository";
 import { User } from "../entities/User";
 import { UserRepository } from "../repositories/UserRepository";
+import { mapKeys, rearg, snakeCase } from 'lodash';
 
 let userRepository: IUserRepository;
 
@@ -26,7 +27,7 @@ class UserController {
                 });
             })
             .catch((error) => {
-                console.log(error);
+
                 response.json({
                     status: Server.status.INTERNAL_SERVER_ERROR.CODE,
                     message: Server.status.INTERNAL_SERVER_ERROR.MSG,
@@ -44,10 +45,13 @@ class UserController {
             .then(result => {
 
                 if (result != null) {
+
+                    let data: any = mapKeys(result, rearg(snakeCase, 1));
+
                     response.json({
                         status: Server.status.OK.CODE,
                         message: Server.status.OK.MSG,
-                        data: result
+                        data: data
                     });
                 }
                 else {

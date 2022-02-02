@@ -1,8 +1,9 @@
-import { User } from "entities/User";
+import { User } from "../entities/User";
 import { IUserRepository } from "../interfaces/IUserRepository";
 import { UserSearchResult } from "../data-sets/UserSearchResult";
 import { mysqlParameterizedPromise, mysqlToPromise } from "../utilities/DbHelper";
 import { mapKeys, rearg, snakeCase  } from "lodash";
+import { UserRegister } from "../entities/UserRegister";
 
 class UserRepository implements IUserRepository {
     
@@ -93,16 +94,57 @@ class UserRepository implements IUserRepository {
 
         let data: any = mapKeys(user, rearg(snakeCase, 1));
 
-        let queryResults: any = mysqlParameterizedPromise(`INSERT INTO users SET ?`, data);
+        let queryResults: any = await mysqlParameterizedPromise(`INSERT INTO users SET ?`, data);
     
         return queryResults.insertId;
     }
 
-    updateUser(id: number, user: User): Promise<boolean> {
+    async updateUser(id: number, user: User): Promise<boolean> {
 
         let data: any = mapKeys(user, rearg(snakeCase, 1));
+ 
+        return await mysqlParameterizedPromise(`UPDATE users SET ? WHERE ?`, [data, {id: id}]);
+    }
 
-        return mysqlParameterizedPromise(`UPDATE users SET ? WHERE ?`, [data, {id: id}]);
+    async checkRegister(userId: number): Promise<UserRegister[]> {
+        
+        let queryResult: any = await mysqlParameterizedPromise(`SELECT * 
+                                                                  FROM user_registers 
+                                                                 WHERE user_id = ? 
+                                                                 LIMIT 1`, userId);
+        let userRegister: UserRegister[] = [];
+
+        for (let index = 0; index < queryResult.length; index++) {
+            const item = queryResult[index];
+            
+            userRegister.push({
+                id: item.id,
+                userId: item.user_id,
+                registerId: item.register_id,
+                ipPort: item.ip_port,
+                ipAddress: item.ip_address,
+                expiresAt: item.expires_at,
+                createdAt: item.created_at,
+                updatedAt: item.updated_at
+            });
+        }
+
+        return userRegister;
+    }
+
+    registerUser(userRegister: UserRegister): Promise<any> {
+
+        let data: any = mapKeys(userRegister, rearg(snakeCase, 1));
+
+        return mysqlParameterizedPromise('INSERT INTO user_registers SET ?', data);
+    }
+
+    updateUserRegister(registerId: number, userId: number): Promise<any> {
+        return mysqlParameterizedPromise('UPDATE user_registers SET register_id = ? WHERE user_id = ?', [registerId, userId]);
+    }
+
+    removeUserRegister(userId: number): Promise<any> {
+        return mysqlToPromise(`DELETE FROM user_registers WHERE user_id = ${userId}`)
     }
 
 }
